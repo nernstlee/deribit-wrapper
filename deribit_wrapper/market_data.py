@@ -294,3 +294,22 @@ class MarketData(Authentication):
             df = pd.concat([df, ret])
         df.sort_index(inplace=True)
         return df
+
+def get_volatility_index_data(self, currency: str, start_date: str | datetime = None, end_date: str | datetime = None,
+                                resolution: str = '1D') -> pd.DataFrame:
+        start_date = start_date or DEFAULT_START
+        end_date = end_date or DEFAULT_END
+        uri = self.__GET_HISTORICAL_VOLATILITY
+        start_dt = from_dt_to_ts(pd.to_datetime(start_date))
+        end_dt = from_dt_to_ts(pd.to_datetime(end_date))
+        params = {'currency': currency,
+                  'start_timestamp': start_dt,
+                  'end_timestamp': end_dt,
+                  'resolution': resolution}
+        ret = self._request(uri, params)
+        df = pd.DataFrame(ret['data'])
+        df.columns = ['ticks', 'open', 'high', 'low', 'close']  # Assign column names directly
+        df['datetime'] = df['ticks'].apply(from_ts_to_dt)
+        df['date'] = df['datetime'].dt.date
+        df.set_index('date', inplace=True)
+        return df
