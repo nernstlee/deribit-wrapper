@@ -276,7 +276,7 @@ class MarketData(Authentication):
             df['date'] = df['datetime'].dt.date
             df.set_index('date', inplace=True)
         else:
-            print(status, 'no data found for asset', asset)
+            logging.warning(f'{status}: no data found for asset {asset}')
         return df
 
     def get_market_data(self, assets: list[str] = None, start_date: str | datetime = None,
