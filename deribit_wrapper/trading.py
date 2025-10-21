@@ -1,5 +1,6 @@
 from __future__ import absolute_import, annotations
 
+import logging
 import time
 from datetime import datetime
 
@@ -8,6 +9,9 @@ from progressbar import progressbar
 
 from .account_management import AccountManagement
 from .utilities import DEFAULT_END, DEFAULT_START, OrdersType
+
+# Create module logger
+logger = logging.getLogger(__name__)
 
 
 class Trading(AccountManagement):
@@ -96,9 +100,9 @@ class Trading(AccountManagement):
         # 10009: not enough funds
         elif code == 10009:
             if params.get('reduce_only'):
-                print('Not enough funds. Already tried as reduce only.')
+                logger.warning('Not enough funds. Already tried as reduce only.')
             else:
-                print('Not enough funds. Attempt as reduce only...')
+                logger.info('Not enough funds. Attempting as reduce only...')
                 params['reduce_only'] = True
                 ret = self._order_with_error_handling(uri, params, exclude_codes=[10009])
 
@@ -106,7 +110,7 @@ class Trading(AccountManagement):
         elif code == 10041:
             max_attempts = 60
             for _ in range(max_attempts):
-                print('Settlement in progress. Waiting 1 second...')
+                logger.info('Settlement in progress. Waiting 1 second...')
                 time.sleep(1)
                 ret = self._order_with_error_handling(uri, params, exclude_codes=[10041])
                 code = ret.get('code')
@@ -114,7 +118,7 @@ class Trading(AccountManagement):
                     break
 
         else:
-            print(f'Error code {code} not handled yet.')
+            logger.warning(f'Error code {code} not handled yet.')
 
         return ret
 

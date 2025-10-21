@@ -44,6 +44,56 @@ from deribit_wrapper import DeribitClient
 client = DeribitClient(client_id='your_client_id', client_secret='your_client_secret')
 ```
 
+
+## Logging
+
+The `deribit-wrapper` library uses Python's standard `logging` module for all output. This gives you complete control over log levels, formats, and destinations.
+
+### Basic Logging Setup
+
+To see logs from the library, configure Python's logging module:
+
+```python
+import logging
+from deribit_wrapper import DeribitClient
+
+# Basic configuration - logs to console
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
+
+client = DeribitClient(client_id='your_id', client_secret='your_secret')
+```
+
+### Advanced Configuration
+
+Configure specific modules for more control:
+
+```python
+# Configure the root logger
+logging.basicConfig(level=logging.WARNING)
+
+# Make deribit_wrapper more verbose
+logging.getLogger('deribit_wrapper').setLevel(logging.INFO)
+
+# Configure specific modules
+logging.getLogger('deribit_wrapper.authentication').setLevel(logging.DEBUG)
+logging.getLogger('deribit_wrapper.trading').setLevel(logging.INFO)
+
+# Suppress noisy libraries
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+```
+
+### Log Levels
+
+- **DEBUG**: Detailed diagnostic information (token refreshes, retries)
+- **INFO**: Confirmation of expected operations (order execution, account sync)
+- **WARNING**: Recoverable issues (rate limits, temporary unavailability)
+- **ERROR**: Serious problems preventing operations
+
+See [LOGGING_DOCS.md](LOGGING_DOCS.md) for complete documentation.
+
 ## Usage
 
 ### Market Data

@@ -1,6 +1,7 @@
 from __future__ import absolute_import, annotations
 
 import json
+import logging
 import time
 import uuid
 import warnings
@@ -13,6 +14,9 @@ from urllib3.util.retry import Retry
 from .base import DeribitBase
 from .exceptions import DeribitClientWarning, ServiceUnavailable, RequestError
 from .utilities import ParamsType, ScopeType, seconds_to_hms
+
+# Create module logger
+logger = logging.getLogger(__name__)
 
 
 class Authentication(DeribitBase):
@@ -108,17 +112,16 @@ class Authentication(DeribitBase):
             self._handle_invalid_params(uri, error_data)
         else:
             sanitized_params = {k: (v if k != 'client_secret' else '***') for k, v in params.items()}
-            print(f'Error code {error_code} for request {uri} with params {sanitized_params}.')
-            print(error_data)
+            logger.warning(f'Error code {error_code} for request {uri} with params {sanitized_params}.')
+            logger.debug(f'Error data: {error_data}')
         return {}
 
     def _handle_too_many_requests(self, uri: str, params: ParamsType, error_data: dict, give_results: bool) -> dict:
         wait = error_data.get('wait', 1)
-        print(f'Too many requests for URI {uri}. Waiting {seconds_to_hms(wait)}...')
+        logger.warning(f'Too many requests for URI {uri}. Waiting {seconds_to_hms(wait)}...')
         for i in range(wait):
             time.sleep(1)
-            print(f"Wait {seconds_to_hms(wait - i)}...", end='\r', flush=True)
-        print()
+            # Progress updates suppressed for cleaner logs
         return self._request(uri, params, give_results=give_results)
 
     def _handle_unauthorised(self, uri: str, params: ParamsType, error_data: dict, give_results: bool) -> dict:
@@ -126,14 +129,14 @@ class Authentication(DeribitBase):
         if reason == 'invalid_token':
             max_attempts = 3
             for i in range(max_attempts):
-                print(f'Invalid token. Trying to get a new one. Attempt {i + 1} of {max_attempts}...')
+                logger.debug(f'Invalid token detected (attempt {i + 1}/{max_attempts}), refreshing...')
                 return self._request(uri, params, give_results=give_results)
         return {}
 
     def _handle_temporarily_unavailable(self, uri: str, params: ParamsType, give_results: bool) -> dict:
         max_attempts = 60
         for i in range(max_attempts):
-            print(f'Temporarily unavailable. Waiting 1 minute [{i + 1}/{max_attempts}]...')
+            logger.warning(f'Service temporarily unavailable. Retry {i + 1}/{max_attempts} in 60s...')
             time.sleep(60)
             ret = self._request(uri, params, give_results=give_results)
             if ret.get('code') != 13028:
@@ -143,7 +146,7 @@ class Authentication(DeribitBase):
     def _handle_invalid_params(self, uri: str, error_data: dict):
         param = error_data.get('param')
         reason = error_data.get('reason')
-        print(f'Invalid params for request {uri}: param={param}, reason={reason}')
+        logger.error(f'Invalid params for request {uri}: param={param}, reason={reason}')
 
     @property
     def access_token(self) -> str:
